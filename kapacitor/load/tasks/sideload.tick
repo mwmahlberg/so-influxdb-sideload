@@ -1,0 +1,79 @@
+dbrp "_internal"."monitor"
+
+var db = '_internal'
+
+var rp = 'monitor'
+
+var measurement = 'database'
+
+var groupBy = ['hostname']
+
+var whereFilter = lambda: TRUE
+
+var name = 'sideloaddemo'
+
+var idVar = name + '-{{.Group}}'
+
+var message = ' {{.ID}} is  {{.Level}}:  {{ index .Fields "value" }}'
+
+var idTag = 'alertID'
+
+var levelTag = 'level'
+
+var messageField = 'message'
+
+var durationField = 'duration'
+
+var outputDB = 'chronograf'
+
+var outputRP = 'autogen'
+
+var outputMeasurement = 'alerts'
+
+var triggerType = 'threshold'
+
+var crit = 100
+
+var data = stream
+    |from()
+        .database(db)
+        .retentionPolicy(rp)
+        .measurement(measurement)
+        .groupBy(groupBy)
+        .where(whereFilter)
+    |eval(lambda: "numMeasurements")
+        .as('value')
+
+var customized = data
+    |sideload()
+        .source('file:///etc/kapacitor/customizations/demo')
+        .order('hosts/host-{{.hostname}}.yaml')
+        .field('maxNumMeasurements',100)
+    |log()
+
+var trigger = customized
+    |alert()
+        .crit(lambda: "value" > "maxNumMeasurements")
+        .stateChangesOnly()
+        .message(message)
+        .id(idVar)
+        .idTag(idTag)
+        .levelTag(levelTag)
+        .messageField(messageField)
+        .durationField(durationField)
+
+trigger
+    |eval(lambda: float("value"))
+        .as('value')
+        .keep()
+    |influxDBOut()
+        .create()
+        .database(outputDB)
+        .retentionPolicy(outputRP)
+        .measurement(outputMeasurement)
+        .tag('alertName', name)
+        .tag('triggerType', triggerType)
+
+trigger
+    |httpOut('output')
+
