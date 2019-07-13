@@ -1,6 +1,8 @@
 Customization of Kapacitor alerts
 =================================
 
+[![Stability: Unsupported](https://masterminds.github.io/stability/unsupported.svg)](https://masterminds.github.io/stability/unsupported.html)
+
 This repository provides a demo for my answer to the Stackoverflow question [How to define Alerts with exception in InfluxDB/Kapacitor][so:op].
 
 Requirements
